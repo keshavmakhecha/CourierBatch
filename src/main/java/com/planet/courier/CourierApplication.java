@@ -14,11 +14,10 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.autoconfigure.batch.BatchAutoConfiguration;
 
 @SpringBootApplication
 @EnableBatchProcessing
-@EnableAutoConfiguration(exclude={BatchAutoConfiguration.class})
+@EnableAutoConfiguration
 public class CourierApplication implements CommandLineRunner {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(CourierApplication.class);

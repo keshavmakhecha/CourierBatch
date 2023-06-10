@@ -41,6 +41,12 @@ Data will be written to country table as per the country record while will be id
 
 Courier is a spring boot application which can be run by creating jar or running the CourierApplication class file.
 
+TO view H2 Console:
+
+http://localhost:8080/h2-console
+
+For input the csv has 16 records as due to memory constraint to push on github, please replace file it in src/main/resources/input
+
 Note: 
 
  1) Retry & Restart Policy is not implemented yet, which will be added in coming release.

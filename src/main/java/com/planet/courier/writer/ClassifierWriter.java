@@ -1,8 +1,6 @@
 package com.planet.courier.writer;
 
-import java.util.List;
-
-import org.springframework.batch.item.database.JdbcBatchItemWriter;
+import org.springframework.batch.item.ItemWriter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.classify.Classifier;
 import org.springframework.stereotype.Component;
@@ -10,23 +8,23 @@ import org.springframework.stereotype.Component;
 import com.planet.courier.model.Courier;
 
 @Component
-public class ClassifierWriter implements Classifier<Courier, JdbcBatchItemWriter<? super List<Courier>>> {
+public class ClassifierWriter implements Classifier<Courier, ItemWriter<? super Courier>> {
 
 	private static final long serialVersionUID = 1L;
 
 	@Autowired
-	private JdbcBatchItemWriter<List<Courier>> cameroonWriter;
+	private CameroonWriter cameroonWriter;
 	@Autowired
-	private JdbcBatchItemWriter<List<Courier>> mozambiqueWriter;
+	private MozambiqueWriter mozambiqueWriter;
 	@Autowired
-	private JdbcBatchItemWriter<List<Courier>> ugandaWriter;
+	private UgandaWriter ugandaWriter;
 	@Autowired
-	private JdbcBatchItemWriter<List<Courier>> ethipoiaWriter;
+	private EthiopiaWriter ethipoiaWriter;
 	@Autowired
-	private JdbcBatchItemWriter<List<Courier>> morocooWriter;
+	private MorocooWriter morocooWriter;
 
 	@Override
-	public JdbcBatchItemWriter<? super List<Courier>> classify(Courier customer) {
+	public ItemWriter<? super Courier> classify(Courier customer) {
 			switch (customer.getCountry()) {
 			case Cameroon:
 				return cameroonWriter;

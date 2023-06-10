@@ -9,7 +9,8 @@ import com.planet.courier.exception.MissingCountryException;
 @Component
 public class RecordProcessingSkipper implements SkipPolicy {
 
-	private static final int MAX_SKIP_COUNT = 8;
+	//For temporary kept max_skip_count to max, as retry logic is not placed.
+	private static final int MAX_SKIP_COUNT = Integer.MAX_VALUE;
 
 	@Override
 	public boolean shouldSkip(Throwable t, long skipCount) throws SkipLimitExceededException {

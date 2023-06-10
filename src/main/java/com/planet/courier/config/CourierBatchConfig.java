@@ -9,7 +9,6 @@ import static com.planet.courier.constant.CourierConstant.MAX_POOL_SIZE;
 import static com.planet.courier.constant.CourierConstant.QUEUE_POOL_SIZE;
 
 import java.text.ParseException;
-import java.util.List;
 
 import javax.sql.DataSource;
 
@@ -25,20 +24,18 @@ import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.repository.support.JobRepositoryFactoryBean;
 import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.item.UnexpectedInputException;
-import org.springframework.batch.item.database.BeanPropertyItemSqlParameterSourceProvider;
-import org.springframework.batch.item.database.JdbcBatchItemWriter;
 import org.springframework.batch.item.file.FlatFileItemReader;
 import org.springframework.batch.item.file.mapping.DefaultLineMapper;
 import org.springframework.batch.item.file.transform.DelimitedLineTokenizer;
 import org.springframework.batch.item.support.ClassifierCompositeItemWriter;
-import org.springframework.batch.support.transaction.ResourcelessTransactionManager;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.task.TaskExecutor;
-import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseBuilder;
-import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseType;
+import org.springframework.orm.jpa.JpaTransactionManager;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.transaction.PlatformTransactionManager;
 
@@ -50,24 +47,25 @@ import com.planet.courier.service.FileVerificationSkipper;
 import com.planet.courier.service.RecordProcessingSkipper;
 import com.planet.courier.writer.ClassifierWriter;
 
-import jakarta.annotation.Resource;
-
 @Configuration
 public class CourierBatchConfig {
 
 	private static final Logger logger = LoggerFactory.getLogger(CourierBatchConfig.class);
-	
-	@Resource
+
+	@Autowired
 	private ClassifierWriter classifierWriter;
-	
-	@Resource
+
+	@Autowired
 	private FileVerificationSkipper fileVerificationSkipper;
-	
-	@Resource
+
+	@Autowired
 	private RecordProcessingSkipper processingSkipper;
-	
-	@Resource
+
+	@Autowired
 	private CsvResourcePartitioner csvResourcePartitioner;
+
+	@Autowired
+	private DataSource datasource;
 
 	@Bean(name = "partitionerJob")
 	public Job partitionerJob(JobRepository jobRepository, PlatformTransactionManager transactionManager)
@@ -88,13 +86,9 @@ public class CourierBatchConfig {
 	public Step slaveStep(JobRepository jobRepository, PlatformTransactionManager transactionManager)
 			throws UnexpectedInputException, ParseException {
 		return new StepBuilder("slaveStep", jobRepository).<Courier, Courier>chunk(CHUNK_SIZE, transactionManager)
-				.reader(itemReader(null, null, null))
-				.faultTolerant().skipPolicy(fileVerificationSkipper)
-				.processor(itemProcessor())
-				.faultTolerant()
-				.skipPolicy(processingSkipper)
-				.writer(classifierCustomerCompositeItemWriter())
-				.taskExecutor(taskExecutor()).build();
+				.reader(itemReader(null, null, null)).faultTolerant().skipPolicy(fileVerificationSkipper)
+				.processor(itemProcessor()).faultTolerant().skipPolicy(processingSkipper)
+				.writer(classifierCompositeItemWriter()).taskExecutor(taskExecutor()).build();
 	}
 
 	@Bean
@@ -133,8 +127,8 @@ public class CourierBatchConfig {
 	}
 
 	@Bean
-	public ClassifierCompositeItemWriter<Courier> classifierCustomerCompositeItemWriter() {
-		ClassifierCompositeItemWriter compositeItemWriter = new ClassifierCompositeItemWriter();
+	public ClassifierCompositeItemWriter<Courier> classifierCompositeItemWriter() {
+		ClassifierCompositeItemWriter<Courier> compositeItemWriter = new ClassifierCompositeItemWriter<Courier>();
 		compositeItemWriter.setClassifier(classifierWriter);
 		return compositeItemWriter;
 	}
@@ -142,25 +136,19 @@ public class CourierBatchConfig {
 	@Bean(name = "jobRepository")
 	public JobRepository getJobRepository() throws Exception {
 		JobRepositoryFactoryBean factory = new JobRepositoryFactoryBean();
-		factory.setDataSource(dataSource());
-		factory.setTransactionManager(transactionManager());
+		factory.setDataSource(datasource);
+		factory.setTransactionManager(jpaTransactionManager());
 		factory.afterPropertiesSet();
 		return factory.getObject();
 	}
-
-	@Bean(name = "dataSource")
-	public DataSource dataSource() {
-		EmbeddedDatabaseBuilder builder = new EmbeddedDatabaseBuilder();
-		return builder.setType(EmbeddedDatabaseType.H2)
-				.addScript("classpath:org/springframework/batch/core/schema-drop-h2.sql")
-				.addScript("classpath:org/springframework/batch/core/schema-h2.sql")
-				.addScript("classpath:courier.sql").build();
-	}
-
+	
 	@Bean(name = "transactionManager")
-	public PlatformTransactionManager transactionManager() {
-		return new ResourcelessTransactionManager();
-	}
+	@Primary
+	public JpaTransactionManager jpaTransactionManager() {
+        final JpaTransactionManager tm = new JpaTransactionManager();
+        tm.setDataSource(datasource);
+        return tm;
+   }
 
 	@Bean(name = "jobLauncher")
 	public JobLauncher getJobLauncher() throws Exception {
@@ -168,56 +156,6 @@ public class CourierBatchConfig {
 		jobLauncher.setJobRepository(getJobRepository());
 		jobLauncher.afterPropertiesSet();
 		return jobLauncher;
-	}
-
-	@Bean(destroyMethod = "")
-	@StepScope
-	public JdbcBatchItemWriter<List<Courier>> cameroonWriter() {
-		JdbcBatchItemWriter<List<Courier>> cameroonWriter= new JdbcBatchItemWriter<List<Courier>>();
-		cameroonWriter.setDataSource(dataSource());
-		cameroonWriter.setSql("INSERT INTO CAMEROON (ID, EMAIL, PHONE_NUMBER, PARCEL_WEIGHT) VALUES (:id, :email, :phoneNumber, :parcelWeight)");
-		cameroonWriter.setItemSqlParameterSourceProvider(new BeanPropertyItemSqlParameterSourceProvider<List<Courier>>());
-	    return cameroonWriter;
-	}
-
-	@Bean(destroyMethod = "")
-	@StepScope
-	public JdbcBatchItemWriter<List<Courier>> ethipoiaWriter() {
-		JdbcBatchItemWriter<List<Courier>> ethipoiaWriter= new JdbcBatchItemWriter<List<Courier>>();
-		ethipoiaWriter.setDataSource(dataSource());
-		ethipoiaWriter.setSql("INSERT INTO ETHIOPIA (ID, EMAIL, PHONE_NUMBER, PARCEL_WEIGHT) VALUES (:id, :email, :phoneNumber, :parcelWeight)");
-		ethipoiaWriter.setItemSqlParameterSourceProvider(new BeanPropertyItemSqlParameterSourceProvider<List<Courier>>());
-	    return ethipoiaWriter;
-	}
-
-	@Bean(destroyMethod = "")
-	@StepScope
-	public JdbcBatchItemWriter<List<Courier>> morocooWriter() {
-		JdbcBatchItemWriter<List<Courier>> morocooWriter= new JdbcBatchItemWriter<List<Courier>>();
-		morocooWriter.setDataSource(dataSource());
-		morocooWriter.setSql("INSERT INTO MOROCOO (ID, EMAIL, PHONE_NUMBER, PARCEL_WEIGHT) VALUES (:id, :email, :phoneNumber, :parcelWeight)");
-		morocooWriter.setItemSqlParameterSourceProvider(new BeanPropertyItemSqlParameterSourceProvider<List<Courier>>());
-	    return morocooWriter;
-	}
-
-	@Bean( destroyMethod = "")
-	@StepScope
-	public JdbcBatchItemWriter<List<Courier>> ugandaWriter() {
-		JdbcBatchItemWriter<List<Courier>> ugandaWriter= new JdbcBatchItemWriter<List<Courier>>();
-		ugandaWriter.setDataSource(dataSource());
-		ugandaWriter.setSql("INSERT INTO UGANDA (ID, EMAIL, PHONE_NUMBER, PARCEL_WEIGHT) VALUES (:id, :email, :phoneNumber, :parcelWeight)");
-		ugandaWriter.setItemSqlParameterSourceProvider(new BeanPropertyItemSqlParameterSourceProvider<List<Courier>>());
-	    return ugandaWriter;
-	}
-
-	@Bean(destroyMethod = "")
-	@StepScope
-	public JdbcBatchItemWriter<List<Courier>> mozambiqueWriter() {
-		JdbcBatchItemWriter<List<Courier>> mozambiqueWriter= new JdbcBatchItemWriter<List<Courier>>();
-		mozambiqueWriter.setDataSource(dataSource());
-		mozambiqueWriter.setSql("INSERT INTO MOZAMBIQUE (ID, EMAIL, PHONE_NUMBER, PARCEL_WEIGHT) VALUES (:id, :email, :phoneNumber, :parcelWeight)");
-		mozambiqueWriter.setItemSqlParameterSourceProvider(new BeanPropertyItemSqlParameterSourceProvider<List<Courier>>());
-	    return mozambiqueWriter;
 	}
 
 	@Bean(destroyMethod = "")
