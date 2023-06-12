@@ -23,27 +23,28 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public class CourierApplication implements CommandLineRunner {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(CourierApplication.class);
-	
+
 	@Autowired
 	private JobLauncher jobLauncher;
-	
+
 	@Autowired
 	private Job partitionerJob;
-	
-	public static void main(String[] args) {
-		//Intialize job params according to csv file size.
-		setParamsByFileSize();
+
+	private final static String INPUT_RESOURCE = FOLDER_PATH.concat(FILE_NAME);
+
+	public static void main(String... args) {
+		// Intialize job params according to csv file size.
+		setParamsByFileSize(INPUT_RESOURCE);
 		SpringApplication.run(CourierApplication.class, args);
 	}
-	
 
 	@Override
 	public void run(String... args) throws Exception {
-		
+
 		LOGGER.info("Starting the batch job");
 		try {
-			JobParametersBuilder jobParametersBuilder =new JobParametersBuilder();
-			jobParametersBuilder.addString("input.file.name", FOLDER_PATH.concat(FILE_NAME));
+			JobParametersBuilder jobParametersBuilder = new JobParametersBuilder();
+			jobParametersBuilder.addString("input.file.name", INPUT_RESOURCE);
 			final JobExecution execution = jobLauncher.run(partitionerJob, jobParametersBuilder.toJobParameters());
 			LOGGER.info("Job Status : {}", execution.getStatus());
 		} catch (final Exception e) {

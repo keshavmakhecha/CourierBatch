@@ -2,8 +2,6 @@ package com.planet.courier.util;
 
 import static com.planet.courier.constant.CourierConstant.CHUNK_SIZE;
 import static com.planet.courier.constant.CourierConstant.CORE_POOL_SIZE;
-import static com.planet.courier.constant.CourierConstant.FILE_NAME;
-import static com.planet.courier.constant.CourierConstant.FOLDER_PATH;
 import static com.planet.courier.constant.CourierConstant.GRID_SIZE;
 import static com.planet.courier.constant.CourierConstant.MAX_POOL_SIZE;
 import static com.planet.courier.constant.CourierConstant.QUEUE_POOL_SIZE;
@@ -20,9 +18,9 @@ public class CourierUtil {
 	
 	private static final Logger LOGGER = LoggerFactory.getLogger(CourierUtil.class);
 
-	public static void setParamsByFileSize() {
+	public static void setParamsByFileSize(String resource) {
 		try {
-			Integer noOfLines = getNoOfLines(FOLDER_PATH.concat(FILE_NAME));
+			Integer noOfLines = getNoOfLines(resource);
 			if (noOfLines > 10000) {
 				GRID_SIZE = 10000;
 				CHUNK_SIZE = 100;
@@ -48,8 +46,8 @@ public class CourierUtil {
 		}
 	}
 	
-	public static int getNoOfLines(String fileName) throws IOException {
-        ClassPathResource classPathResource = new ClassPathResource(fileName);
+	public static int getNoOfLines(String filepath) throws IOException {
+        ClassPathResource classPathResource = new ClassPathResource(filepath);
         LineNumberReader reader = new LineNumberReader(new FileReader(classPathResource.getFile().getAbsolutePath()));
         reader.skip(Integer.MAX_VALUE);
         return reader.getLineNumber();
