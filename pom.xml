@@ -12,6 +12,7 @@
 	<groupId>com.planet</groupId>
 	<artifactId>courier</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
+	<packaging>jar</packaging>
 	<name>courier</name>
 	<description>Courier Service which will process the csv files</description>
 	<properties>
@@ -30,13 +31,15 @@
 			<version>${spring.version}</version>
 			<exclusions>
 				<exclusion>
-					<artifactId>commons-logging</artifactId>
+					<artifactId>
+						commons-logging</artifactId>
 					<groupId>commons-logging</groupId>
 				</exclusion>
 			</exclusions>
 		</dependency>
 		<dependency>
-			<groupId>com.opencsv</groupId>
+			<groupId>
+				com.opencsv</groupId>
 			<artifactId>opencsv</artifactId>
 			<version>${opencsv.version}</version>
 		</dependency>
@@ -53,43 +56,69 @@
 			<artifactId>spring-boot-starter-data-jpa</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>com.h2database</groupId>
+			<groupId>
+				com.h2database</groupId>
 			<artifactId>h2</artifactId>
 		</dependency>
 
 		<!--  Spring Test Dependencies-->
 		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-test</artifactId>
+			<groupId>
+				junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>4.12</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
-			<groupId>org.springframework.batch</groupId>
+			<groupId>
+				org.junit.vintage</groupId>
+			<artifactId>junit-vintage-engine</artifactId>
+			<version>
+				5.4.0</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>
+				org.springframework.boot</groupId>
+			<artifactId>
+				spring-boot-starter-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>
+				org.springframework.batch</groupId>
 			<artifactId>spring-batch-test</artifactId>
+			<scope>
+				test</scope>
 		</dependency>
 	</dependencies>
 
 	<build>
 		<plugins>
 			<plugin>
-				<groupId>org.springframework.boot</groupId>
+				<groupId>
+					org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
 			</plugin>
 		</plugins>
 	</build>
 	<repositories>
 		<repository>
-			<id>spring-milestones</id>
+			<id>
+				spring-milestones</id>
 			<name>Spring Milestones</name>
-			<url>https://repo.spring.io/milestone</url>
+			<url>
+				https://repo.spring.io/milestone</url>
 			<snapshots>
 				<enabled>false</enabled>
 			</snapshots>
 		</repository>
 		<repository>
-			<id>spring-snapshots</id>
+			<id>
+				spring-snapshots</id>
 			<name>Spring Snapshots</name>
-			<url>https://repo.spring.io/snapshot</url>
+			<url>
+				https://repo.spring.io/snapshot</url>
 			<releases>
 				<enabled>false</enabled>
 			</releases>
@@ -97,17 +126,21 @@
 	</repositories>
 	<pluginRepositories>
 		<pluginRepository>
-			<id>spring-milestones</id>
+			<id>
+				spring-milestones</id>
 			<name>Spring Milestones</name>
-			<url>https://repo.spring.io/milestone</url>
+			<url>
+				https://repo.spring.io/milestone</url>
 			<snapshots>
 				<enabled>false</enabled>
 			</snapshots>
 		</pluginRepository>
 		<pluginRepository>
-			<id>spring-snapshots</id>
+			<id>
+				spring-snapshots</id>
 			<name>Spring Snapshots</name>
-			<url>https://repo.spring.io/snapshot</url>
+			<url>
+				https://repo.spring.io/snapshot</url>
 			<releases>
 				<enabled>false</enabled>
 			</releases>

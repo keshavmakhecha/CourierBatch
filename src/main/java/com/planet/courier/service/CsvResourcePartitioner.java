@@ -1,7 +1,5 @@
 package com.planet.courier.service;
 
-import static com.planet.courier.constant.CourierConstant.FILE_NAME;
-import static com.planet.courier.constant.CourierConstant.FOLDER_PATH;
 import static com.planet.courier.util.CourierUtil.getNoOfLines;
 
 import java.io.IOException;
@@ -12,20 +10,23 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.batch.core.partition.support.Partitioner;
 import org.springframework.batch.item.ExecutionContext;
-import org.springframework.stereotype.Component;
 
-@Component
 public class CsvResourcePartitioner implements Partitioner {
 
 	private static final Logger logger = LoggerFactory.getLogger(CsvResourcePartitioner.class);
-
+	private String resource;
+	
+	public CsvResourcePartitioner(String resource) {
+		this.resource = resource;
+	}
+	
 	public Map<String, ExecutionContext> partition(int gridSize) {
 		
 		Map<String, ExecutionContext> result = new HashMap<>();
 
         int noOfLines = 0;
         try {
-            noOfLines = getNoOfLines(FOLDER_PATH.concat(FILE_NAME));
+            noOfLines = getNoOfLines(resource);
         } catch (IOException e) {
             e.printStackTrace();
         }

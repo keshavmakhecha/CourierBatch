@@ -2,8 +2,6 @@ package com.planet.courier.config;
 
 import static com.planet.courier.constant.CourierConstant.CHUNK_SIZE;
 import static com.planet.courier.constant.CourierConstant.CORE_POOL_SIZE;
-import static com.planet.courier.constant.CourierConstant.FILE_NAME;
-import static com.planet.courier.constant.CourierConstant.FOLDER_PATH;
 import static com.planet.courier.constant.CourierConstant.GRID_SIZE;
 import static com.planet.courier.constant.CourierConstant.MAX_POOL_SIZE;
 import static com.planet.courier.constant.CourierConstant.QUEUE_POOL_SIZE;
@@ -41,7 +39,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 
 import com.planet.courier.mapper.RecordMappper;
 import com.planet.courier.model.Courier;
-import com.planet.courier.processor.CourierItemProcessor;
+import com.planet.courier.processor.CourierProcessor;
 import com.planet.courier.service.CsvResourcePartitioner;
 import com.planet.courier.service.FileVerificationSkipper;
 import com.planet.courier.service.RecordProcessingSkipper;
@@ -62,9 +60,6 @@ public class CourierBatchConfig {
 	private RecordProcessingSkipper processingSkipper;
 
 	@Autowired
-	private CsvResourcePartitioner csvResourcePartitioner;
-
-	@Autowired
 	private DataSource datasource;
 
 	@Bean(name = "partitionerJob")
@@ -77,7 +72,7 @@ public class CourierBatchConfig {
 	@Bean
 	public Step partitionStep(JobRepository jobRepository, PlatformTransactionManager transactionManager)
 			throws UnexpectedInputException, ParseException {
-		return new StepBuilder("partitionStep", jobRepository).partitioner("slaveStep", csvResourcePartitioner)
+		return new StepBuilder("partitionStep", jobRepository).partitioner("slaveStep", csvResourcePartitioner(null))
 				.step(slaveStep(jobRepository, transactionManager)).taskExecutor(taskExecutor()).gridSize(GRID_SIZE)
 				.build();
 	}
@@ -86,7 +81,7 @@ public class CourierBatchConfig {
 	public Step slaveStep(JobRepository jobRepository, PlatformTransactionManager transactionManager)
 			throws UnexpectedInputException, ParseException {
 		return new StepBuilder("slaveStep", jobRepository).<Courier, Courier>chunk(CHUNK_SIZE, transactionManager)
-				.reader(itemReader(null, null, null)).faultTolerant().skipPolicy(fileVerificationSkipper)
+				.reader(itemReader(null, null, null, null)).faultTolerant().skipPolicy(fileVerificationSkipper)
 				.processor(itemProcessor()).faultTolerant().skipPolicy(processingSkipper)
 				.writer(classifierCompositeItemWriter()).taskExecutor(taskExecutor()).build();
 	}
@@ -94,11 +89,12 @@ public class CourierBatchConfig {
 	@Bean
 	@StepScope
 	public FlatFileItemReader<Courier> itemReader(
+			@Value("#{jobParameters['input.file.name']}") String resource,
 			@Value("#{stepExecutionContext[partition_number]}") final Long partitionNumber,
 			@Value("#{stepExecutionContext[first_line]}") final Long firstLine,
 			@Value("#{stepExecutionContext[last_line]}") final Long lastLine)
 			throws UnexpectedInputException, ParseException {
-
+		logger.info("Reading input from source : {}", resource);
 		logger.info("Partition Number : {}, Reading file from line : {}, to line: {} ", partitionNumber, firstLine,
 				lastLine);
 
@@ -111,7 +107,7 @@ public class CourierBatchConfig {
 		lineMapper.setFieldSetMapper(new RecordMappper());
 		reader.setLinesToSkip(Math.toIntExact(firstLine));
 		reader.setMaxItemCount(Math.toIntExact(lastLine));
-		reader.setResource(new ClassPathResource(FOLDER_PATH.concat(FILE_NAME)));
+		reader.setResource(new ClassPathResource(resource));
 		reader.setLineMapper(lineMapper);
 		return reader;
 	}
@@ -160,7 +156,13 @@ public class CourierBatchConfig {
 
 	@Bean(destroyMethod = "")
 	@StepScope
-	public CourierItemProcessor itemProcessor() {
-		return new CourierItemProcessor();
+	public CourierProcessor itemProcessor() {
+		return new CourierProcessor();
+	}
+	
+	@Bean(destroyMethod = "")
+	@StepScope
+	public CsvResourcePartitioner csvResourcePartitioner(@Value("#{jobParameters['input.file.name']}") String resource) {
+		return new CsvResourcePartitioner(resource);
 	}
 }

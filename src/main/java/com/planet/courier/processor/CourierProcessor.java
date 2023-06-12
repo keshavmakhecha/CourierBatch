@@ -11,7 +11,7 @@ import org.springframework.batch.item.ItemProcessor;
 import com.planet.courier.exception.MissingCountryException;
 import com.planet.courier.model.Courier;
 
-public class CourierItemProcessor implements ItemProcessor<Courier, Courier> {
+public class CourierProcessor implements ItemProcessor<Courier, Courier> {
 
 	public Courier process(Courier courier) {
 
